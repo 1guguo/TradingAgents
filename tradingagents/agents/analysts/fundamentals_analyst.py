@@ -14,7 +14,25 @@ from tradingagents.dataflows.config import get_config
 
 
 def create_fundamentals_analyst(llm):
+    """
+    创建基本面分析师节点工厂函数
+    
+    Args:
+        llm: 大语言模型实例，用于处理分析任务
+        
+    Returns:
+        fundamentals_analyst_node: 返回一个处理基本面分析的状态节点函数
+    """
     def fundamentals_analyst_node(state):
+        """
+        基本面分析师状态节点，负责分析公司的基本面信息
+        
+        Args:
+            state: 包含交易日期、目标公司等信息的状态字典
+            
+        Returns:
+            dict: 包含消息和基本面报告的字典
+        """
         current_date = state["trade_date"]
         instrument_context = build_instrument_context(state["company_of_interest"])
 

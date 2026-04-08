@@ -15,35 +15,36 @@ class Reflector:
     def _get_reflection_prompt(self) -> str:
         """Get the system prompt for reflection."""
         return """
-You are an expert financial analyst tasked with reviewing trading decisions/analysis and providing a comprehensive, step-by-step analysis. 
-Your goal is to deliver detailed insights into investment decisions and highlight opportunities for improvement, adhering strictly to the following guidelines:
+你是一位专业的金融分析师，负责回顾交易决策/分析，并提供全面、逐步的分析。
+你的目标是提供对投资决策的详细见解，并突出改进机会，严格遵循以下指导原则：
 
-1. Reasoning:
-   - For each trading decision, determine whether it was correct or incorrect. A correct decision results in an increase in returns, while an incorrect decision does the opposite.
-   - Analyze the contributing factors to each success or mistake. Consider:
-     - Market intelligence.
-     - Technical indicators.
-     - Technical signals.
-     - Price movement analysis.
-     - Overall market data analysis 
-     - News analysis.
-     - Social media and sentiment analysis.
-     - Fundamental data analysis.
-     - Weight the importance of each factor in the decision-making process.
+1. 推理：
+   - 对于每个交易决策，判断其是否正确。正确的决策带来收益增长，反之则导致亏损。
+   - 分析每个成功或错误的贡献因素。考虑：
+     - 市场情报
+     - 技术指标
+     - 技术信号
+     - 价格走势分析
+     - 整体市场数据分析
+     - 新闻分析
+     - 社交媒体和情绪分析
+     - 基本面分析
+     - 权衡每个因素在决策过程中的重要性
 
-2. Improvement:
-   - For any incorrect decisions, propose revisions to maximize returns.
-   - Provide a detailed list of corrective actions or improvements, including specific recommendations (e.g., changing a decision from HOLD to BUY on a particular date).
+2. 改进：
+   - 对于任何错误的决策，提出修改建议以最大化收益。
+   - 提供具体的纠正措施或改进清单，包括具体建议（例如：在特定日期将决策从 HOLD 改为 BUY）。
 
-3. Summary:
-   - Summarize the lessons learned from the successes and mistakes.
-   - Highlight how these lessons can be adapted for future trading scenarios and draw connections between similar situations to apply the knowledge gained.
+3. 总结：
+   - 总结从成功和错误中吸取的教训。
+   - 强调如何将这些教训应用于未来的交易场景，并建立类似情况之间的联系以应用所获得的知识。
 
-4. Query:
-   - Extract key insights from the summary into a concise sentence of no more than 1000 tokens.
-   - Ensure the condensed sentence captures the essence of the lessons and reasoning for easy reference.
+4. 关键洞察：
+   - 将总结中的关键洞察提炼成简洁的句子（不超过 1000 字）。
+   - 确保提炼的句子捕捉到推理和教训的本质，便于以后参考。
 
-Adhere strictly to these instructions, and ensure your output is detailed, accurate, and actionable. You will also be given objective descriptions of the market from a price movements, technical indicator, news, and sentiment perspective to provide more context for your analysis.
+严格遵循这些指令，确保你的输出详细、准确且可操作。
+你还将获得市场从价格走势、技术指标、新闻和情绪角度的客观描述，为你的分析提供更多背景。
 """
 
     def _extract_current_situation(self, current_state: Dict[str, Any]) -> str:
@@ -110,7 +111,9 @@ Adhere strictly to these instructions, and ensure your output is detailed, accur
         )
         invest_judge_memory.add_situations([(situation, result)])
 
-    def reflect_portfolio_manager(self, current_state, returns_losses, portfolio_manager_memory):
+    def reflect_portfolio_manager(
+        self, current_state, returns_losses, portfolio_manager_memory
+    ):
         """Reflect on portfolio manager's decision and update memory."""
         situation = self._extract_current_situation(current_state)
         judge_decision = current_state["risk_debate_state"]["judge_decision"]

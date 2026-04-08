@@ -30,7 +30,7 @@ class FinancialSituationMemory:
         Simple whitespace + punctuation tokenization with lowercasing.
         """
         # Lowercase and split on non-alphanumeric characters
-        tokens = re.findall(r'\b\w+\b', text.lower())
+        tokens = re.findall(r"\b\w+\b", text.lower())
         return tokens
 
     def _rebuild_index(self):
@@ -74,7 +74,9 @@ class FinancialSituationMemory:
         scores = self.bm25.get_scores(query_tokens)
 
         # Get top-n indices sorted by score (descending)
-        top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:n_matches]
+        top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[
+            :n_matches
+        ]
 
         # Build results
         results = []
@@ -83,11 +85,13 @@ class FinancialSituationMemory:
         for idx in top_indices:
             # Normalize score to 0-1 range for consistency
             normalized_score = scores[idx] / max_score if max_score > 0 else 0
-            results.append({
-                "matched_situation": self.documents[idx],
-                "recommendation": self.recommendations[idx],
-                "similarity_score": normalized_score,
-            })
+            results.append(
+                {
+                    "matched_situation": self.documents[idx],
+                    "recommendation": self.recommendations[idx],
+                    "similarity_score": normalized_score,
+                }
+            )
 
         return results
 
@@ -96,6 +100,68 @@ class FinancialSituationMemory:
         self.documents = []
         self.recommendations = []
         self.bm25 = None
+
+    def save(self, filepath: str = None):
+        """Save memory to a JSON file.
+
+        Args:
+            filepath: Path to save the memory. If None, uses default path.
+        """
+        import json
+        from pathlib import Path
+
+        if filepath is None:
+            # Default: save to ~/.tradingagents/memories/{name}.json
+            home_dir = Path.home() / ".tradingagents" / "memories"
+            home_dir.mkdir(parents=True, exist_ok=True)
+            filepath = str(home_dir / f"{self.name}.json")
+
+        data = {
+            "name": self.name,
+            "documents": self.documents,
+            "recommendations": self.recommendations,
+        }
+
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+        print(f"Memory saved to: {filepath}")
+
+    @classmethod
+    def load(cls, name: str, filepath: str = None):
+        """Load memory from a JSON file.
+
+        Args:
+            name: Name identifier for this memory instance
+            filepath: Path to load the memory from. If None, uses default path.
+
+        Returns:
+            FinancialSituationMemory instance with loaded data
+        """
+        import json
+        from pathlib import Path
+
+        if filepath is None:
+            home_dir = Path.home() / ".tradingagents" / "memories"
+            filepath = str(home_dir / f"{name}.json")
+
+        memory = cls(name, {})
+
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            memory.documents = data.get("documents", [])
+            memory.recommendations = data.get("recommendations", [])
+            memory._rebuild_index()
+
+            print(
+                f"Memory loaded from: {filepath} ({len(memory.documents)} situations)"
+            )
+        except FileNotFoundError:
+            print(f"No existing memory found at: {filepath}, starting fresh")
+
+        return memory
 
 
 if __name__ == "__main__":
@@ -121,7 +187,27 @@ if __name__ == "__main__":
             "Rebalance portfolio to maintain target allocations. Consider increasing exposure to sectors benefiting from higher rates.",
         ),
     ]
-
+    """
+    example_data = [
+    (
+        "高通胀率叠加利率上升与消费支出下降",
+        "考虑配置必需消费品、公用事业等防御性板块。调整固定收益投资组合久期。",
+    ),
+    (
+        "科技板块波动性高企，机构抛售压力加剧",
+        "减持高成长科技股。在现金流强劲的成熟科技企业中寻找价值投资机会。",
+    ),
+    (
+        "美元走强影响新兴市场，外汇波动性上升",
+        "对跨境投资头寸进行汇率对冲。考虑降低对新兴市场债券的配置。",
+    ),
+    (
+        "市场显现板块轮动迹象，收益率持续上行",
+        "对投资组合进行再平衡以维持目标配置比例。考虑增配受益于高利率的板块。",
+    ),
+]
+    
+    """
     # Add the example situations and recommendations
     matcher.add_situations(example_data)
 

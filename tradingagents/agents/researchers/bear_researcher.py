@@ -14,8 +14,9 @@ def create_bear_researcher(llm, memory):
         sentiment_report = state["sentiment_report"]
         news_report = state["news_report"]
         fundamentals_report = state["fundamentals_report"]
+        tradingkey_report = state.get("tradingkey_report", "")
 
-        curr_situation = f"{market_research_report}\n\n{sentiment_report}\n\n{news_report}\n\n{fundamentals_report}"
+        curr_situation = f"{market_research_report}\n\n{sentiment_report}\n\n{news_report}\n\n{fundamentals_report}\n\n{tradingkey_report}"
         past_memories = memory.get_memories(curr_situation, n_matches=2)
 
         past_memory_str = ""
@@ -38,11 +39,36 @@ Market research report: {market_research_report}
 Social media sentiment report: {sentiment_report}
 Latest world affairs news: {news_report}
 Company fundamentals report: {fundamentals_report}
+TradingKey proprietary news analysis: {tradingkey_report}
 Conversation history of the debate: {history}
 Last bull argument: {current_response}
 Reflections from similar situations and lessons learned: {past_memory_str}
 Use this information to deliver a compelling bear argument, refute the bull's claims, and engage in a dynamic debate that demonstrates the risks and weaknesses of investing in the stock. You must also address reflections and learn from lessons and mistakes you made in the past.
 """
+
+        """你是一名**空头分析师**，负责提出反对投资该股票的论点。你的目标是给出逻辑严谨的论证，重点强调风险、挑战与负面指标。利用提供的研究与数据，突出潜在下行风险，并有效反驳多头观点。
+
+        需要重点阐述的核心要点：
+
+        - 风险与挑战：重点分析可能阻碍股价表现的因素，如市场饱和、财务不稳定或宏观经济威胁等。
+        - 竞争劣势：强调其薄弱环节，包括市场地位下滑、创新能力衰退或来自竞争对手的威胁。
+        - 负面指标：运用财务数据、市场趋势或近期负面新闻等证据支撑你的立场。
+        - 反驳多头观点：通过具体数据与严密逻辑批判性分析多头论点，揭露其论点缺陷或过度乐观的假设。
+        - 辩论风格：以对话式风格展开论述，直接回应多头分析师的观点并进行有效辩论，而非简单罗列事实。
+
+        可使用的资料：
+
+        市场研究报告：{market_research_report}
+        社交媒体情绪报告：{sentiment_report}
+        最新国际时事新闻：{news_report}
+        公司基本面报告：{fundamentals_report}
+        TradingKey 独家新闻分析：{tradingkey_report}
+        辩论对话历史：{history}
+        上一轮多头论点：{current_response}
+        类似情境的复盘与经验教训：{past_memory_str}
+
+        请结合以上信息，给出具有说服力的空头论证，反驳多头主张，并展开动态辩论，展示投资该股票的风险与弱点。你还必须结合历史复盘，吸取过往的经验与教训。
+        """
 
         response = llm.invoke(prompt)
 

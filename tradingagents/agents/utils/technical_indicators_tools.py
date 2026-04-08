@@ -20,6 +20,20 @@ def get_indicators(
     Returns:
         str: A formatted dataframe containing the technical indicators for the specified ticker symbol and indicator.
     """
+    
+    """
+    获取指定股票代码的单一技术指标。
+    使用已配置的技术指标数据供应商。
+
+    参数:
+        symbol (str): 公司股票代码，例如 AAPL、TSM
+        indicator (str): 单一技术指标名称，例如 'rsi'、'macd'。每个指标单独调用一次本工具。
+        curr_date (str): 当前交易日期，格式为 YYYY-mm-dd
+        look_back_days (int): 回溯天数，默认为 30
+
+    返回:
+        str: 格式化后的数据表，包含指定股票代码与技术指标的数据。
+"""
     # LLMs sometimes pass multiple indicators as a comma-separated string;
     # split and process each individually.
     indicators = [i.strip() for i in indicator.split(",") if i.strip()]

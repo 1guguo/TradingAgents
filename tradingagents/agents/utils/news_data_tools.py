@@ -18,6 +18,16 @@ def get_news(
     Returns:
         str: A formatted string containing news data
     """
+    """
+    获取指定股票代码的新闻数据。
+    使用已配置的新闻数据供应商。
+    参数:
+        ticker (str): 股票代码
+        start_date (str): 开始日期，格式为yyyy-mm-dd
+        end_date (str): 结束日期，格式为yyyy-mm-dd
+    返回:
+        str: 包含新闻数据的格式化字符串
+    """
     return route_to_vendor("get_news", ticker, start_date, end_date)
 
 @tool
@@ -36,6 +46,16 @@ def get_global_news(
     Returns:
         str: A formatted string containing global news data
     """
+    """
+    获取全球新闻数据。
+    使用已配置的新闻数据供应商。
+    参数:
+        curr_date (str): 当前日期，格式为yyyy-mm-dd
+        look_back_days (int): 往前追溯的天数（默认7天）
+        limit (int): 返回文章的最大数量（默认5篇）
+    返回:
+        str: 包含全球新闻数据的格式化字符串
+    """
     return route_to_vendor("get_global_news", curr_date, look_back_days, limit)
 
 @tool
@@ -49,5 +69,13 @@ def get_insider_transactions(
         ticker (str): Ticker symbol of the company
     Returns:
         str: A report of insider transaction data
+    """
+    """
+    获取关于公司的内部人士交易信息。
+    使用已配置的新闻数据供应商。
+    参数:
+        ticker (str): 公司的股票代码
+    返回:
+        str: 内部人士交易数据报告
     """
     return route_to_vendor("get_insider_transactions", ticker)

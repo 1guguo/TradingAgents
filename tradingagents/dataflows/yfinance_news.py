@@ -110,6 +110,17 @@ def get_global_news_yfinance(
     limit: int = 10,
 ) -> str:
     """
+    通过 yfinance 搜索功能获取全球/宏观经济新闻。
+
+    参数:
+        curr_date: 当前日期，格式为 yyyy-mm-dd
+        look_back_days: 回溯查询的天数
+        limit: 返回文章的最大数量
+
+    返回值:
+        包含全球新闻文章的格式化字符串
+    """
+    """
     Retrieve global/macro economic news using yfinance Search.
 
     Args:

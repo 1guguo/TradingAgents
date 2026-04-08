@@ -1,5 +1,6 @@
 from typing import Optional
 import datetime
+import json
 import typer
 from pathlib import Path
 from functools import wraps
@@ -36,6 +37,7 @@ app = typer.Typer(
     name="TradingAgents",
     help="TradingAgents CLI: Multi-Agents LLM Financial Trading Framework",
     add_completion=True,  # Enable shell completion
+    invoke_without_command=True,  # Allow running without subcommand
 )
 
 
@@ -45,7 +47,11 @@ class MessageBuffer:
     FIXED_AGENTS = {
         "Research Team": ["Bull Researcher", "Bear Researcher", "Research Manager"],
         "Trading Team": ["Trader"],
-        "Risk Management": ["Aggressive Analyst", "Neutral Analyst", "Conservative Analyst"],
+        "Risk Management": [
+            "Aggressive Analyst",
+            "Neutral Analyst",
+            "Conservative Analyst",
+        ],
         "Portfolio Management": ["Portfolio Manager"],
     }
 
@@ -55,6 +61,7 @@ class MessageBuffer:
         "social": "Social Analyst",
         "news": "News Analyst",
         "fundamentals": "Fundamentals Analyst",
+        "tradingkey": "TradingKey Analyst",
     }
 
     # Report section mapping: section -> (analyst_key for filtering, finalizing_agent)
@@ -165,7 +172,7 @@ class MessageBuffer:
             if content is not None:
                 latest_section = section
                 latest_content = content
-               
+
         if latest_section and latest_content:
             # Format the current section for display
             section_titles = {
@@ -188,7 +195,12 @@ class MessageBuffer:
         report_parts = []
 
         # Analyst Team Reports - use .get() to handle missing sections
-        analyst_sections = ["market_report", "sentiment_report", "news_report", "fundamentals_report"]
+        analyst_sections = [
+            "market_report",
+            "sentiment_report",
+            "news_report",
+            "fundamentals_report",
+        ]
         if any(self.report_sections.get(section) for section in analyst_sections):
             report_parts.append("## Analyst Team Reports")
             if self.report_sections.get("market_report"):
@@ -248,7 +260,7 @@ def create_layout():
 def format_tokens(n):
     """Format token count for display."""
     if n >= 1000:
-        return f"{n/1000:.1f}k"
+        return f"{n / 1000:.1f}k"
     return str(n)
 
 
@@ -286,10 +298,15 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
             "Social Analyst",
             "News Analyst",
             "Fundamentals Analyst",
+            "TradingKey Analyst",
         ],
         "Research Team": ["Bull Researcher", "Bear Researcher", "Research Manager"],
         "Trading Team": ["Trader"],
-        "Risk Management": ["Aggressive Analyst", "Neutral Analyst", "Conservative Analyst"],
+        "Risk Management": [
+            "Aggressive Analyst",
+            "Neutral Analyst",
+            "Conservative Analyst",
+        ],
         "Portfolio Management": ["Portfolio Manager"],
     }
 
@@ -501,8 +518,11 @@ def get_user_selections():
     # Step 1: Ticker symbol
     console.print(
         create_question_box(
-            "Step 1: Ticker Symbol",
-            "Enter the exact ticker symbol to analyze, including exchange suffix when needed (examples: SPY, CNC.TO, 7203.T, 0700.HK)",
+            # "Step 1: Ticker Symbol",
+            # "Enter the exact ticker symbol to analyze, including exchange suffix when needed (examples: SPY, CNC.TO, 7203.T, 0700.HK)",
+            # "SPY",
+            "第一步：股票代码",
+            "输入需要分析的完整股票代码，必要时请包含交易所后缀（示例：SPY，CNC.TO，7203.T，0700.HK）",
             "SPY",
         )
     )
@@ -512,8 +532,10 @@ def get_user_selections():
     default_date = datetime.datetime.now().strftime("%Y-%m-%d")
     console.print(
         create_question_box(
-            "Step 2: Analysis Date",
-            "Enter the analysis date (YYYY-MM-DD)",
+            # "Step 2: Analysis Date",
+            # "Enter the analysis date (YYYY-MM-DD)",
+            "第二步：分析日期",
+            "输入分析日期（年 - 月 - 日）",
             default_date,
         )
     )
@@ -522,8 +544,10 @@ def get_user_selections():
     # Step 3: Output language
     console.print(
         create_question_box(
-            "Step 3: Output Language",
-            "Select the language for analyst reports and final decision"
+            # "Step 3: Output Language",
+            # "Select the language for analyst reports and final decision"
+            "第三步：输出语言",
+            "选择分析师报告和最终决策所使用的语言",
         )
     )
     output_language = ask_output_language()
@@ -531,7 +555,9 @@ def get_user_selections():
     # Step 4: Select analysts
     console.print(
         create_question_box(
-            "Step 4: Analysts Team", "Select your LLM analyst agents for the analysis"
+            # "Step 4: Analysts Team", "Select your LLM analyst agents for the analysis"
+            "第四步：分析师团队",
+            "选择用于本次分析的大模型分析师智能体",
         )
     )
     selected_analysts = select_analysts()
@@ -540,26 +566,16 @@ def get_user_selections():
     )
 
     # Step 5: Research depth
-    console.print(
-        create_question_box(
-            "Step 5: Research Depth", "Select your research depth level"
-        )
-    )
+    console.print(create_question_box("第五步：研究深度", "选择您的研究深度级别"))
     selected_research_depth = select_research_depth()
 
     # Step 6: LLM Provider
-    console.print(
-        create_question_box(
-            "Step 6: LLM Provider", "Select your LLM provider"
-        )
-    )
+    console.print(create_question_box("第六步：大模型服务商", "选择您的大模型服务商"))
     selected_llm_provider, backend_url = select_llm_provider()
 
     # Step 7: Thinking agents
     console.print(
-        create_question_box(
-            "Step 7: Thinking Agents", "Select your thinking agents for analysis"
-        )
+        create_question_box("第七步：智能分析代理", "选择用于分析的思考代理模型")
     )
     selected_shallow_thinker = select_shallow_thinking_agent(selected_llm_provider)
     selected_deep_thinker = select_deep_thinking_agent(selected_llm_provider)
@@ -573,25 +589,20 @@ def get_user_selections():
     if provider_lower == "google":
         console.print(
             create_question_box(
-                "Step 8: Thinking Mode",
-                "Configure Gemini thinking mode"
+                "Step 8: Thinking Mode", "Configure Gemini thinking mode"
             )
         )
         thinking_level = ask_gemini_thinking_config()
     elif provider_lower == "openai":
         console.print(
             create_question_box(
-                "Step 8: Reasoning Effort",
-                "Configure OpenAI reasoning effort level"
+                "Step 8: Reasoning Effort", "Configure OpenAI reasoning effort level"
             )
         )
         reasoning_effort = ask_openai_reasoning_effort()
     elif provider_lower == "anthropic":
         console.print(
-            create_question_box(
-                "Step 8: Effort Level",
-                "Configure Claude effort level"
-            )
+            create_question_box("Step 8: Effort Level", "Configure Claude effort level")
         )
         anthropic_effort = ask_anthropic_effort()
 
@@ -657,8 +668,16 @@ def save_report_to_disk(final_state, ticker: str, save_path: Path):
         analyst_parts.append(("News Analyst", final_state["news_report"]))
     if final_state.get("fundamentals_report"):
         analysts_dir.mkdir(exist_ok=True)
-        (analysts_dir / "fundamentals.md").write_text(final_state["fundamentals_report"])
-        analyst_parts.append(("Fundamentals Analyst", final_state["fundamentals_report"]))
+        (analysts_dir / "fundamentals.md").write_text(
+            final_state["fundamentals_report"]
+        )
+        analyst_parts.append(
+            ("Fundamentals Analyst", final_state["fundamentals_report"])
+        )
+    if final_state.get("tradingkey_report"):
+        analysts_dir.mkdir(exist_ok=True)
+        (analysts_dir / "tradingkey.md").write_text(final_state["tradingkey_report"])
+        analyst_parts.append(("TradingKey Analyst", final_state["tradingkey_report"]))
     if analyst_parts:
         content = "\n\n".join(f"### {name}\n{text}" for name, text in analyst_parts)
         sections.append(f"## I. Analyst Team Reports\n\n{content}")
@@ -681,7 +700,9 @@ def save_report_to_disk(final_state, ticker: str, save_path: Path):
             (research_dir / "manager.md").write_text(debate["judge_decision"])
             research_parts.append(("Research Manager", debate["judge_decision"]))
         if research_parts:
-            content = "\n\n".join(f"### {name}\n{text}" for name, text in research_parts)
+            content = "\n\n".join(
+                f"### {name}\n{text}" for name, text in research_parts
+            )
             sections.append(f"## II. Research Team Decision\n\n{content}")
 
     # 3. Trading
@@ -689,7 +710,9 @@ def save_report_to_disk(final_state, ticker: str, save_path: Path):
         trading_dir = save_path / "3_trading"
         trading_dir.mkdir(exist_ok=True)
         (trading_dir / "trader.md").write_text(final_state["trader_investment_plan"])
-        sections.append(f"## III. Trading Team Plan\n\n### Trader\n{final_state['trader_investment_plan']}")
+        sections.append(
+            f"## III. Trading Team Plan\n\n### Trader\n{final_state['trader_investment_plan']}"
+        )
 
     # 4. Risk Management
     if final_state.get("risk_debate_state"):
@@ -717,11 +740,31 @@ def save_report_to_disk(final_state, ticker: str, save_path: Path):
             portfolio_dir = save_path / "5_portfolio"
             portfolio_dir.mkdir(exist_ok=True)
             (portfolio_dir / "decision.md").write_text(risk["judge_decision"])
-            sections.append(f"## V. Portfolio Manager Decision\n\n### Portfolio Manager\n{risk['judge_decision']}")
+            sections.append(
+                f"## V. Portfolio Manager Decision\n\n### Portfolio Manager\n{risk['judge_decision']}"
+            )
 
     # Write consolidated report
     header = f"# Trading Analysis Report: {ticker}\n\nGenerated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
     (save_path / "complete_report.md").write_text(header + "\n\n".join(sections))
+
+    # Save final_state as JSON for future reflection
+    serializable_state = {}
+    for key, value in final_state.items():
+        if key == "messages":
+            # Skip LangChain message objects - not needed for review
+            continue
+        elif isinstance(value, (str, int, float, bool, list, dict, type(None))):
+            serializable_state[key] = value
+        elif key in ["investment_debate_state", "risk_debate_state"]:
+            serializable_state[key] = value
+        else:
+            serializable_state[key] = str(value)
+
+    (save_path / "final_state.json").write_text(
+        json.dumps(serializable_state, indent=2, ensure_ascii=False)
+    )
+
     return save_path / "complete_report.md"
 
 
@@ -740,10 +783,18 @@ def display_complete_report(final_state):
         analysts.append(("News Analyst", final_state["news_report"]))
     if final_state.get("fundamentals_report"):
         analysts.append(("Fundamentals Analyst", final_state["fundamentals_report"]))
+    if final_state.get("tradingkey_report"):
+        analysts.append(("TradingKey Analyst", final_state["tradingkey_report"]))
     if analysts:
-        console.print(Panel("[bold]I. Analyst Team Reports[/bold]", border_style="cyan"))
+        console.print(
+            Panel("[bold]I. Analyst Team Reports[/bold]", border_style="cyan")
+        )
         for title, content in analysts:
-            console.print(Panel(Markdown(content), title=title, border_style="blue", padding=(1, 2)))
+            console.print(
+                Panel(
+                    Markdown(content), title=title, border_style="blue", padding=(1, 2)
+                )
+            )
 
     # II. Research Team Reports
     if final_state.get("investment_debate_state"):
@@ -756,14 +807,32 @@ def display_complete_report(final_state):
         if debate.get("judge_decision"):
             research.append(("Research Manager", debate["judge_decision"]))
         if research:
-            console.print(Panel("[bold]II. Research Team Decision[/bold]", border_style="magenta"))
+            console.print(
+                Panel("[bold]II. Research Team Decision[/bold]", border_style="magenta")
+            )
             for title, content in research:
-                console.print(Panel(Markdown(content), title=title, border_style="blue", padding=(1, 2)))
+                console.print(
+                    Panel(
+                        Markdown(content),
+                        title=title,
+                        border_style="blue",
+                        padding=(1, 2),
+                    )
+                )
 
     # III. Trading Team
     if final_state.get("trader_investment_plan"):
-        console.print(Panel("[bold]III. Trading Team Plan[/bold]", border_style="yellow"))
-        console.print(Panel(Markdown(final_state["trader_investment_plan"]), title="Trader", border_style="blue", padding=(1, 2)))
+        console.print(
+            Panel("[bold]III. Trading Team Plan[/bold]", border_style="yellow")
+        )
+        console.print(
+            Panel(
+                Markdown(final_state["trader_investment_plan"]),
+                title="Trader",
+                border_style="blue",
+                padding=(1, 2),
+            )
+        )
 
     # IV. Risk Management Team
     if final_state.get("risk_debate_state"):
@@ -776,14 +845,36 @@ def display_complete_report(final_state):
         if risk.get("neutral_history"):
             risk_reports.append(("Neutral Analyst", risk["neutral_history"]))
         if risk_reports:
-            console.print(Panel("[bold]IV. Risk Management Team Decision[/bold]", border_style="red"))
+            console.print(
+                Panel(
+                    "[bold]IV. Risk Management Team Decision[/bold]", border_style="red"
+                )
+            )
             for title, content in risk_reports:
-                console.print(Panel(Markdown(content), title=title, border_style="blue", padding=(1, 2)))
+                console.print(
+                    Panel(
+                        Markdown(content),
+                        title=title,
+                        border_style="blue",
+                        padding=(1, 2),
+                    )
+                )
 
         # V. Portfolio Manager Decision
         if risk.get("judge_decision"):
-            console.print(Panel("[bold]V. Portfolio Manager Decision[/bold]", border_style="green"))
-            console.print(Panel(Markdown(risk["judge_decision"]), title="Portfolio Manager", border_style="blue", padding=(1, 2)))
+            console.print(
+                Panel(
+                    "[bold]V. Portfolio Manager Decision[/bold]", border_style="green"
+                )
+            )
+            console.print(
+                Panel(
+                    Markdown(risk["judge_decision"]),
+                    title="Portfolio Manager",
+                    border_style="blue",
+                    padding=(1, 2),
+                )
+            )
 
 
 def update_research_team_status(status):
@@ -794,18 +885,20 @@ def update_research_team_status(status):
 
 
 # Ordered list of analysts for status transitions
-ANALYST_ORDER = ["market", "social", "news", "fundamentals"]
+ANALYST_ORDER = ["market", "social", "news", "fundamentals", "tradingkey"]
 ANALYST_AGENT_NAMES = {
     "market": "Market Analyst",
     "social": "Social Analyst",
     "news": "News Analyst",
     "fundamentals": "Fundamentals Analyst",
+    "tradingkey": "TradingKey Analyst",
 }
 ANALYST_REPORT_MAP = {
     "market": "market_report",
     "social": "sentiment_report",
     "news": "news_report",
     "fundamentals": "fundamentals_report",
+    "tradingkey": "tradingkey_report",
 }
 
 
@@ -850,6 +943,7 @@ def update_analyst_statuses(message_buffer, chunk):
         if message_buffer.agent_status.get("Bull Researcher") == "pending":
             message_buffer.update_agent_status("Bull Researcher", "in_progress")
 
+
 def extract_content_string(content):
     """Extract string content from various message formats.
     Returns None if no meaningful text content is found.
@@ -858,7 +952,7 @@ def extract_content_string(content):
 
     def is_empty(val):
         """Check if value is empty using Python's truthiness."""
-        if val is None or val == '':
+        if val is None or val == "":
             return True
         if isinstance(val, str):
             s = val.strip()
@@ -877,16 +971,17 @@ def extract_content_string(content):
         return content.strip()
 
     if isinstance(content, dict):
-        text = content.get('text', '')
+        text = content.get("text", "")
         return text.strip() if not is_empty(text) else None
 
     if isinstance(content, list):
         text_parts = [
-            item.get('text', '').strip() if isinstance(item, dict) and item.get('type') == 'text'
-            else (item.strip() if isinstance(item, str) else '')
+            item.get("text", "").strip()
+            if isinstance(item, dict) and item.get("type") == "text"
+            else (item.strip() if isinstance(item, str) else "")
             for item in content
         ]
-        result = ' '.join(t for t in text_parts if t and not is_empty(t))
+        result = " ".join(t for t in text_parts if t and not is_empty(t))
         return result if result else None
 
     return str(content).strip() if not is_empty(content) else None
@@ -901,7 +996,7 @@ def classify_message_type(message) -> tuple[str, str | None]:
     """
     from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 
-    content = extract_content_string(getattr(message, 'content', None))
+    content = extract_content_string(getattr(message, "content", None))
 
     if isinstance(message, HumanMessage):
         if content and content.strip() == "Continue":
@@ -922,8 +1017,9 @@ def format_tool_args(args, max_length=80) -> str:
     """Format tool arguments for terminal display."""
     result = str(args)
     if len(result) > max_length:
-        return result[:max_length - 3] + "..."
+        return result[: max_length - 3] + "..."
     return result
+
 
 def run_analysis():
     # First get all user selections
@@ -965,7 +1061,9 @@ def run_analysis():
     start_time = time.time()
 
     # Create result directory
-    results_dir = Path(config["results_dir"]) / selections["ticker"] / selections["analysis_date"]
+    results_dir = (
+        Path(config["results_dir"]) / selections["ticker"] / selections["analysis_date"]
+    )
     results_dir.mkdir(parents=True, exist_ok=True)
     report_dir = results_dir / "reports"
     report_dir.mkdir(parents=True, exist_ok=True)
@@ -974,6 +1072,7 @@ def run_analysis():
 
     def save_message_decorator(obj, func_name):
         func = getattr(obj, func_name)
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             func(*args, **kwargs)
@@ -981,10 +1080,12 @@ def run_analysis():
             content = content.replace("\n", " ")  # Replace newlines with spaces
             with open(log_file, "a") as f:
                 f.write(f"{timestamp} [{message_type}] {content}\n")
+
         return wrapper
-    
+
     def save_tool_call_decorator(obj, func_name):
         func = getattr(obj, func_name)
+
         @wraps(func)
         def wrapper(*args, **kwargs):
             func(*args, **kwargs)
@@ -992,25 +1093,39 @@ def run_analysis():
             args_str = ", ".join(f"{k}={v}" for k, v in args.items())
             with open(log_file, "a") as f:
                 f.write(f"{timestamp} [Tool Call] {tool_name}({args_str})\n")
+
         return wrapper
 
     def save_report_section_decorator(obj, func_name):
         func = getattr(obj, func_name)
+
         @wraps(func)
         def wrapper(section_name, content):
             func(section_name, content)
-            if section_name in obj.report_sections and obj.report_sections[section_name] is not None:
+            if (
+                section_name in obj.report_sections
+                and obj.report_sections[section_name] is not None
+            ):
                 content = obj.report_sections[section_name]
                 if content:
                     file_name = f"{section_name}.md"
-                    text = "\n".join(str(item) for item in content) if isinstance(content, list) else content
+                    text = (
+                        "\n".join(str(item) for item in content)
+                        if isinstance(content, list)
+                        else content
+                    )
                     with open(report_dir / file_name, "w") as f:
                         f.write(text)
+
         return wrapper
 
     message_buffer.add_message = save_message_decorator(message_buffer, "add_message")
-    message_buffer.add_tool_call = save_tool_call_decorator(message_buffer, "add_tool_call")
-    message_buffer.update_report_section = save_report_section_decorator(message_buffer, "update_report_section")
+    message_buffer.add_tool_call = save_tool_call_decorator(
+        message_buffer, "add_tool_call"
+    )
+    message_buffer.update_report_section = save_report_section_decorator(
+        message_buffer, "update_report_section"
+    )
 
     # Now start the display layout
     layout = create_layout()
@@ -1039,7 +1154,9 @@ def run_analysis():
         spinner_text = (
             f"Analyzing {selections['ticker']} on {selections['analysis_date']}..."
         )
-        update_display(layout, spinner_text, stats_handler=stats_handler, start_time=start_time)
+        update_display(
+            layout, spinner_text, stats_handler=stats_handler, start_time=start_time
+        )
 
         # Initialize state and get graph args with callbacks
         init_agent_state = graph.propagator.create_initial_state(
@@ -1073,7 +1190,9 @@ def run_analysis():
                                     tool_call["name"], tool_call["args"]
                                 )
                             else:
-                                message_buffer.add_tool_call(tool_call.name, tool_call.args)
+                                message_buffer.add_tool_call(
+                                    tool_call.name, tool_call.args
+                                )
 
             # Update analyst statuses based on report state (runs on every chunk)
             update_analyst_statuses(message_buffer, chunk)
@@ -1110,7 +1229,9 @@ def run_analysis():
                 )
                 if message_buffer.agent_status.get("Trader") != "completed":
                     message_buffer.update_agent_status("Trader", "completed")
-                    message_buffer.update_agent_status("Aggressive Analyst", "in_progress")
+                    message_buffer.update_agent_status(
+                        "Aggressive Analyst", "in_progress"
+                    )
 
             # Risk Management Team - Handle Risk Debate State
             if chunk.get("risk_debate_state"):
@@ -1121,33 +1242,65 @@ def run_analysis():
                 judge = risk_state.get("judge_decision", "").strip()
 
                 if agg_hist:
-                    if message_buffer.agent_status.get("Aggressive Analyst") != "completed":
-                        message_buffer.update_agent_status("Aggressive Analyst", "in_progress")
+                    if (
+                        message_buffer.agent_status.get("Aggressive Analyst")
+                        != "completed"
+                    ):
+                        message_buffer.update_agent_status(
+                            "Aggressive Analyst", "in_progress"
+                        )
                     message_buffer.update_report_section(
-                        "final_trade_decision", f"### Aggressive Analyst Analysis\n{agg_hist}"
+                        "final_trade_decision",
+                        f"### Aggressive Analyst Analysis\n{agg_hist}",
                     )
                 if con_hist:
-                    if message_buffer.agent_status.get("Conservative Analyst") != "completed":
-                        message_buffer.update_agent_status("Conservative Analyst", "in_progress")
+                    if (
+                        message_buffer.agent_status.get("Conservative Analyst")
+                        != "completed"
+                    ):
+                        message_buffer.update_agent_status(
+                            "Conservative Analyst", "in_progress"
+                        )
                     message_buffer.update_report_section(
-                        "final_trade_decision", f"### Conservative Analyst Analysis\n{con_hist}"
+                        "final_trade_decision",
+                        f"### Conservative Analyst Analysis\n{con_hist}",
                     )
                 if neu_hist:
-                    if message_buffer.agent_status.get("Neutral Analyst") != "completed":
-                        message_buffer.update_agent_status("Neutral Analyst", "in_progress")
+                    if (
+                        message_buffer.agent_status.get("Neutral Analyst")
+                        != "completed"
+                    ):
+                        message_buffer.update_agent_status(
+                            "Neutral Analyst", "in_progress"
+                        )
                     message_buffer.update_report_section(
-                        "final_trade_decision", f"### Neutral Analyst Analysis\n{neu_hist}"
+                        "final_trade_decision",
+                        f"### Neutral Analyst Analysis\n{neu_hist}",
                     )
                 if judge:
-                    if message_buffer.agent_status.get("Portfolio Manager") != "completed":
-                        message_buffer.update_agent_status("Portfolio Manager", "in_progress")
-                        message_buffer.update_report_section(
-                            "final_trade_decision", f"### Portfolio Manager Decision\n{judge}"
+                    if (
+                        message_buffer.agent_status.get("Portfolio Manager")
+                        != "completed"
+                    ):
+                        message_buffer.update_agent_status(
+                            "Portfolio Manager", "in_progress"
                         )
-                        message_buffer.update_agent_status("Aggressive Analyst", "completed")
-                        message_buffer.update_agent_status("Conservative Analyst", "completed")
-                        message_buffer.update_agent_status("Neutral Analyst", "completed")
-                        message_buffer.update_agent_status("Portfolio Manager", "completed")
+                        message_buffer.update_report_section(
+                            "final_trade_decision",
+                            f"### Portfolio Manager Decision\n{judge}",
+                        )
+                        message_buffer.update_agent_status(
+                            "Aggressive Analyst", "completed"
+                        )
+                        message_buffer.update_agent_status(
+                            "Conservative Analyst", "completed"
+                        )
+                        message_buffer.update_agent_status(
+                            "Neutral Analyst", "completed"
+                        )
+                        message_buffer.update_agent_status(
+                            "Portfolio Manager", "completed"
+                        )
 
             # Update the display
             update_display(layout, stats_handler=stats_handler, start_time=start_time)
@@ -1182,26 +1335,216 @@ def run_analysis():
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         default_path = Path.cwd() / "reports" / f"{selections['ticker']}_{timestamp}"
         save_path_str = typer.prompt(
-            "Save path (press Enter for default)",
-            default=str(default_path)
+            "Save path (press Enter for default)", default=str(default_path)
         ).strip()
         save_path = Path(save_path_str)
         try:
-            report_file = save_report_to_disk(final_state, selections["ticker"], save_path)
+            report_file = save_report_to_disk(
+                final_state, selections["ticker"], save_path
+            )
             console.print(f"\n[green]✓ Report saved to:[/green] {save_path.resolve()}")
             console.print(f"  [dim]Complete report:[/dim] {report_file.name}")
         except Exception as e:
             console.print(f"[red]Error saving report: {e}[/red]")
 
     # Prompt to display full report
-    display_choice = typer.prompt("\nDisplay full report on screen?", default="Y").strip().upper()
+    display_choice = (
+        typer.prompt("\nDisplay full report on screen?", default="Y").strip().upper()
+    )
     if display_choice in ("Y", "YES", ""):
         display_complete_report(final_state)
 
 
 @app.command()
 def analyze():
+    """Run trading analysis for a stock (default command)."""
     run_analysis()
+
+
+@app.callback(invoke_without_command=True)
+def main(ctx: typer.Context):
+    """TradingAgents CLI - Multi-Agents LLM Financial Trading Framework.
+
+    Run without a command to start the interactive analysis.
+    """
+    if ctx.invoked_subcommand is None:
+        run_analysis()
+
+
+@app.command()
+def review(
+    report_path: str = typer.Argument(
+        ..., help="报告路径，如 reports/GLD_20260407_074456"
+    ),
+    returns: float = typer.Option(
+        ..., "--returns", "-r", help="实际收益率，如 0.032 表示 3.2%"
+    ),
+):
+    """复盘之前的交易报告"""
+    from tradingagents.graph.reflection import Reflector
+    from tradingagents.agents.utils.memory import FinancialSituationMemory
+    from tradingagents.llm_clients import create_llm_client
+    from tradingagents.default_config import DEFAULT_CONFIG
+
+    console = Console()
+
+    # 1. 加载 final_state
+    state_file = Path(report_path) / "final_state.json"
+    if not state_file.exists():
+        console.print(f"[red]错误：找不到 final_state.json 文件：{state_file}[/red]")
+        console.print(
+            "[yellow]提示：只有新生成的报告才包含此文件。旧报告需要重新运行分析。[/yellow]"
+        )
+        raise typer.Exit(1)
+
+    console.print(f"[green]加载报告状态：{state_file}[/green]")
+    with open(state_file, "r", encoding="utf-8") as f:
+        final_state = json.load(f)
+
+    ticker = final_state.get("company_of_interest", "Unknown")
+    trade_date = final_state.get("trade_date", "Unknown")
+    console.print(
+        f"[cyan]股票代码：{ticker} | 交易日期：{trade_date} | 收益率：{returns:.2%}[/cyan]"
+    )
+
+    # 2. 交互式选择 LLM 提供商
+    from cli.utils import select_llm_provider, get_model_options
+
+    provider_key, base_url = select_llm_provider()
+
+    model_options = get_model_options(provider_key, mode="quick")
+    # 转换为 questionary 的 Choice 格式
+    model_choices = [
+        questionary.Choice(display, value=model) for display, model in model_options
+    ]
+    quick_model = questionary.select(
+        "Select Quick-Thinking LLM for review:",
+        choices=model_choices,
+    ).ask()
+
+    # 2. 创建复盘器
+    llm_client = create_llm_client(
+        provider=provider_key,
+        model=quick_model,
+        base_url=base_url,
+    )
+    llm = llm_client.get_llm()
+    reflector = Reflector(llm)
+
+    # 3. 创建记忆系统 (config 参数可选，传入空字典)
+    # 尝试加载已有记忆，如果没有则创建新的
+    console.print("[dim]加载历史记忆...[/dim]")
+    bull_memory = FinancialSituationMemory.load("bull_memory")
+    bear_memory = FinancialSituationMemory.load("bear_memory")
+    trader_memory = FinancialSituationMemory.load("trader_memory")
+    invest_judge_memory = FinancialSituationMemory.load("invest_judge_memory")
+    portfolio_manager_memory = FinancialSituationMemory.load("portfolio_manager_memory")
+    console.print("[green]✓ 历史记忆加载完成[/green]")
+
+    # 4. 执行复盘
+    console.print("\n[bold]开始复盘...[/bold]\n")
+
+    review_results = {}
+
+    try:
+        # 构建市场情况描述作为 documents
+        # 包含所有分析师报告，便于未来相似情况检索
+        situation = (
+            f"## Market Report\n{final_state.get('market_report', '')}\n\n"
+            f"## News Report\n{final_state.get('news_report', '')}\n\n"
+            f"## Sentiment Report\n{final_state.get('sentiment_report', '')}\n\n"
+            f"## Fundamentals Report\n{final_state.get('fundamentals_report', '')}"
+        )
+
+        console.print("[dim]复盘 Bull Researcher...[/dim]")
+        result = reflector._reflect_on_component(
+            "BULL",
+            final_state.get("investment_debate_state", {}).get("bull_history", ""),
+            f"{final_state.get('market_report', '')}\n\n{final_state.get('news_report', '')}",
+            returns,
+        )
+        review_results["bull_review"] = result
+        # 保存：市场情况 -> 复盘建议
+        bull_memory.add_situations([(situation, result)])
+        console.print("[green]✓ Bull Researcher 复盘完成[/green]")
+
+        console.print("[dim]复盘 Bear Researcher...[/dim]")
+        result = reflector._reflect_on_component(
+            "BEAR",
+            final_state.get("investment_debate_state", {}).get("bear_history", ""),
+            f"{final_state.get('market_report', '')}\n\n{final_state.get('news_report', '')}",
+            returns,
+        )
+        review_results["bear_review"] = result
+        bear_memory.add_situations([(situation, result)])
+        console.print("[green]✓ Bear Researcher 复盘完成[/green]")
+
+        console.print("[dim]复盘 Trader...[/dim]")
+        result = reflector._reflect_on_component(
+            "TRADER",
+            final_state.get("trader_investment_plan", ""),
+            f"{final_state.get('market_report', '')}\n\n{final_state.get('news_report', '')}",
+            returns,
+        )
+        review_results["trader_review"] = result
+        trader_memory.add_situations([(situation, result)])
+        console.print("[green]✓ Trader 复盘完成[/green]")
+
+        console.print("[dim]复盘 Research Manager...[/dim]")
+        result = reflector._reflect_on_component(
+            "INVEST JUDGE",
+            final_state.get("investment_debate_state", {}).get("judge_decision", ""),
+            f"{final_state.get('market_report', '')}\n\n{final_state.get('news_report', '')}",
+            returns,
+        )
+        review_results["research_manager_review"] = result
+        invest_judge_memory.add_situations([(situation, result)])
+        console.print("[green]✓ Research Manager 复盘完成[/green]")
+
+        console.print("[dim]复盘 Portfolio Manager...[/dim]")
+        result = reflector._reflect_on_component(
+            "PORTFOLIO MANAGER",
+            final_state.get("risk_debate_state", {}).get("judge_decision", ""),
+            f"{final_state.get('market_report', '')}\n\n{final_state.get('news_report', '')}",
+            returns,
+        )
+        review_results["portfolio_manager_review"] = result
+        portfolio_manager_memory.add_situations([(situation, result)])
+        console.print("[green]✓ Portfolio Manager 复盘完成[/green]")
+
+        # 5. 保存复盘结果
+        review_dir = Path(report_path) / "6_review"
+        review_dir.mkdir(exist_ok=True)
+
+        for key, content in review_results.items():
+            (review_dir / f"{key}.md").write_text(content)
+
+        # 保存汇总
+        summary = f"# 复盘报告\n\n**股票代码：** {ticker}\n**交易日期：** {trade_date}\n**实际收益率：** {returns:.2%}\n\n"
+        for key, content in review_results.items():
+            role_name = key.replace("_review", "").replace("_", " ").title()
+            summary += f"## {role_name}\n\n{content}\n\n---\n\n"
+
+        (review_dir / "summary.md").write_text(summary)
+
+        # 6. 保存记忆到磁盘（持久化）
+        console.print("[dim]保存记忆到磁盘...[/dim]")
+        bull_memory.save()
+        bear_memory.save()
+        trader_memory.save()
+        invest_judge_memory.save()
+        portfolio_manager_memory.save()
+        console.print("[green]✓ 记忆已持久化保存[/green]")
+
+        console.print(f"\n[green]✓ 复盘完成！结果已保存到：{review_dir}[/green]")
+        console.print(f"  [dim]汇总报告：{review_dir / 'summary.md'}[/dim]")
+
+    except Exception as e:
+        console.print(f"[red]复盘过程中出错：{e}[/red]")
+        import traceback
+
+        traceback.print_exc()
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":
