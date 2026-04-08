@@ -1409,18 +1409,37 @@ def review(
 
     # 2. 交互式选择 LLM 提供商
     from cli.utils import select_llm_provider, get_model_options
+    import sys
 
-    provider_key, base_url = select_llm_provider()
+    # Check if we're running in a non-interactive environment (like pipes)
+    if not sys.stdin.isatty():
+        # Default to the first provider when running non-interactively
+        provider_key = "openai"
+        base_url = "https://api.openai.com/v1"
+        console.print(
+            "[yellow]Running in non-interactive mode, defaulting to OpenAI provider.[/yellow]"
+        )
+    else:
+        provider_key, base_url = select_llm_provider()
 
     model_options = get_model_options(provider_key, mode="quick")
     # 转换为 questionary 的 Choice 格式
     model_choices = [
         questionary.Choice(display, value=model) for display, model in model_options
     ]
-    quick_model = questionary.select(
-        "Select Quick-Thinking LLM for review:",
-        choices=model_choices,
-    ).ask()
+
+    # Check if we're running in a non-interactive environment (like pipes)
+    if not sys.stdin.isatty():
+        # Default to the first model when running non-interactively
+        quick_model = model_options[0][1] if model_options else None
+        console.print(
+            f"[yellow]Running in non-interactive mode, defaulting to model: {quick_model}[/yellow]"
+        )
+    else:
+        quick_model = questionary.select(
+            "Select Quick-Thinking LLM for review:",
+            choices=model_choices,
+        ).ask()
 
     # 2. 创建复盘器
     llm_client = create_llm_client(

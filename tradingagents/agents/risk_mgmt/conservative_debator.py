@@ -1,6 +1,4 @@
-from langchain_core.messages import AIMessage
-import time
-import json
+from tradingagents.agents.utils.agent_utils import get_language_instruction
 
 
 def create_conservative_debator(llm):
@@ -9,7 +7,9 @@ def create_conservative_debator(llm):
         history = risk_debate_state.get("history", "")
         conservative_history = risk_debate_state.get("conservative_history", "")
 
-        current_aggressive_response = risk_debate_state.get("current_aggressive_response", "")
+        current_aggressive_response = risk_debate_state.get(
+            "current_aggressive_response", ""
+        )
         current_neutral_response = risk_debate_state.get("current_neutral_response", "")
 
         market_research_report = state["market_report"]
@@ -31,7 +31,7 @@ Latest World Affairs Report: {news_report}
 Company Fundamentals Report: {fundamentals_report}
 Here is the current conversation history: {history} Here is the last response from the aggressive analyst: {current_aggressive_response} Here is the last response from the neutral analyst: {current_neutral_response}. If there are no responses from the other viewpoints yet, present your own argument based on the available data.
 
-Engage by questioning their optimism and emphasizing the potential downsides they may have overlooked. Address each of their counterpoints to showcase why a conservative stance is ultimately the safest path for the firm's assets. Focus on debating and critiquing their arguments to demonstrate the strength of a low-risk strategy over their approaches. Output conversationally as if you are speaking without any special formatting."""
+Engage by questioning their optimism and emphasizing the potential downsides they may have overlooked. Address each of their counterpoints to showcase why a conservative stance is ultimately the safest path for the firm's assets. Focus on debating and critiquing their arguments to demonstrate the strength of a low-risk strategy over their approaches. Output conversationally as if you are speaking without any special formatting.{get_language_instruction()}"""
 
         response = llm.invoke(prompt)
 
@@ -42,7 +42,6 @@ Engage by questioning their optimism and emphasizing the potential downsides the
             "aggressive_history": risk_debate_state.get("aggressive_history", ""),
             "conservative_history": conservative_history + "\n" + argument,
             "neutral_history": risk_debate_state.get("neutral_history", ""),
-            "latest_speaker": "Conservative",
             "current_aggressive_response": risk_debate_state.get(
                 "current_aggressive_response", ""
             ),
@@ -50,6 +49,7 @@ Engage by questioning their optimism and emphasizing the potential downsides the
             "current_neutral_response": risk_debate_state.get(
                 "current_neutral_response", ""
             ),
+            "latest_speaker": "Conservative Analyst",
             "count": risk_debate_state["count"] + 1,
         }
 

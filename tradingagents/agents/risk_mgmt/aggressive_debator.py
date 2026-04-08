@@ -1,5 +1,4 @@
-import time
-import json
+from tradingagents.agents.utils.agent_utils import get_language_instruction
 
 
 def create_aggressive_debator(llm):
@@ -8,7 +7,9 @@ def create_aggressive_debator(llm):
         history = risk_debate_state.get("history", "")
         aggressive_history = risk_debate_state.get("aggressive_history", "")
 
-        current_conservative_response = risk_debate_state.get("current_conservative_response", "")
+        current_conservative_response = risk_debate_state.get(
+            "current_conservative_response", ""
+        )
         current_neutral_response = risk_debate_state.get("current_neutral_response", "")
 
         market_research_report = state["market_report"]
@@ -18,19 +19,19 @@ def create_aggressive_debator(llm):
 
         trader_decision = state["trader_investment_plan"]
 
-        prompt = f"""As the Aggressive Risk Analyst, your role is to actively champion high-reward, high-risk opportunities, emphasizing bold strategies and competitive advantages. When evaluating the trader's decision or plan, focus intently on the potential upside, growth potential, and innovative benefits—even when these come with elevated risk. Use the provided market data and sentiment analysis to strengthen your arguments and challenge the opposing views. Specifically, respond directly to each point made by the conservative and neutral analysts, countering with data-driven rebuttals and persuasive reasoning. Highlight where their caution might miss critical opportunities or where their assumptions may be overly conservative. Here is the trader's decision:
+        prompt = f"""As the Aggressive Risk Analyst, your primary objective is to maximize returns, even if it means accepting higher levels of volatility. You are confident in your risk tolerance and are willing to seize opportunities that others might consider too risky. When evaluating the trader's decision or plan, you actively champion the boldest strategies, pointing out where conservative approaches might be missing out on significant gains. Here is the trader's decision:
 
 {trader_decision}
 
-Your task is to create a compelling case for the trader's decision by questioning and critiquing the conservative and neutral stances to demonstrate why your high-reward perspective offers the best path forward. Incorporate insights from the following sources into your arguments:
+Your task is to actively counter the arguments of the Conservative and Neutral Analysts, highlighting where their caution might be causing the firm to miss out on profitable opportunities. Respond directly to their points, drawing from the following data sources to build a convincing case for a more aggressive approach to the trader's decision:
 
 Market Research Report: {market_research_report}
 Social Media Sentiment Report: {sentiment_report}
 Latest World Affairs Report: {news_report}
 Company Fundamentals Report: {fundamentals_report}
-Here is the current conversation history: {history} Here are the last arguments from the conservative analyst: {current_conservative_response} Here are the last arguments from the neutral analyst: {current_neutral_response}. If there are no responses from the other viewpoints yet, present your own argument based on the available data.
+Here is the current conversation history: {history} Here is the last response from the conservative analyst: {current_conservative_response} Here is the last response from the neutral analyst: {current_neutral_response}. If there are no responses from the other viewpoints yet, present your own argument based on the available data.
 
-Engage actively by addressing any specific concerns raised, refuting the weaknesses in their logic, and asserting the benefits of risk-taking to outpace market norms. Maintain a focus on debating and persuading, not just presenting data. Challenge each counterpoint to underscore why a high-risk approach is optimal. Output conversationally as if you are speaking without any special formatting."""
+Engage by challenging their caution and emphasizing the potential gains they might be overlooking. Address each of their counterpoints to showcase why an aggressive stance can lead to superior returns for the firm. Focus on debating and critiquing their arguments to demonstrate the strengths of an aggressive strategy over their approaches. Output conversationally as if you are speaking without any special formatting.{get_language_instruction()}"""
 
         response = llm.invoke(prompt)
 
@@ -41,12 +42,14 @@ Engage actively by addressing any specific concerns raised, refuting the weaknes
             "aggressive_history": aggressive_history + "\n" + argument,
             "conservative_history": risk_debate_state.get("conservative_history", ""),
             "neutral_history": risk_debate_state.get("neutral_history", ""),
-            "latest_speaker": "Aggressive",
             "current_aggressive_response": argument,
-            "current_conservative_response": risk_debate_state.get("current_conservative_response", ""),
+            "current_conservative_response": risk_debate_state.get(
+                "current_conservative_response", ""
+            ),
             "current_neutral_response": risk_debate_state.get(
                 "current_neutral_response", ""
             ),
+            "latest_speaker": "Aggressive Analyst",
             "count": risk_debate_state["count"] + 1,
         }
 

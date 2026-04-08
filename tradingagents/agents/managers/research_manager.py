@@ -1,7 +1,7 @@
-import time
-import json
-
-from tradingagents.agents.utils.agent_utils import build_instrument_context
+from tradingagents.agents.utils.agent_utils import (
+    build_instrument_context,
+    get_language_instruction,
+)
 
 
 def create_research_manager(llm, memory):
@@ -34,13 +34,13 @@ Strategic Actions: Concrete steps for implementing the recommendation.
 Take into account your past mistakes on similar situations. Use these insights to refine your decision-making and ensure you are learning and improving. Present your analysis conversationally, as if speaking naturally, without special formatting. 
 
 Here are your past reflections on mistakes:
-\"{past_memory_str}\"
+"{past_memory_str}"
 
 {instrument_context}
 
 Here is the debate:
 Debate History:
-{history}"""
+{history}{get_language_instruction()}"""
         response = llm.invoke(prompt)
 
         new_investment_debate_state = {

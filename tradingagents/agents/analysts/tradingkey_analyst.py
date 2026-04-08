@@ -9,6 +9,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from tradingagents.agents.utils.tradingkey_tools import (
     get_tradingkey_global_news,
 )
+from tradingagents.agents.utils.agent_utils import get_language_instruction
 
 
 def create_tradingkey_analyst(llm):
@@ -43,7 +44,7 @@ def create_tradingkey_analyst(llm):
             "5. 行业趋势和板块轮动信号。"
             "请提供具体、可执行的见解并附上佐证依据，帮助交易者做出明智决策。"
             "请务必在报告末尾附上一个 Markdown 表格，对核心要点进行整理，"
-            "使其条理清晰、易于阅读。"
+            "使其条理清晰、易于阅读。" + get_language_instruction()
         )
 
         prompt = ChatPromptTemplate.from_messages(
