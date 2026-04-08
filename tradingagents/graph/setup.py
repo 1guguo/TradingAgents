@@ -130,18 +130,26 @@ class GraphSetup:
         workflow.add_node("Conservative Analyst", conservative_analyst)
         workflow.add_node("Portfolio Manager", portfolio_manager_node)
 
-        # Define edges
-        # Start with the first analyst
-        first_analyst = selected_analysts[0]
-        workflow.add_edge(START, f"{first_analyst.capitalize()} Analyst")
+        # Define edges - PARALLEL EXECUTION FOR ANALYSTS
+        # Use lambda to fan-out to all analysts in parallel from START
+        from langgraph.constants import Send
 
-        # Connect analysts in sequence
+        def fan_out_analysts(state):
+            """Send state to all analysts for parallel execution."""
+            return [
+                Send(f"{analyst_type.capitalize()} Analyst", state)
+                for analyst_type in selected_analysts
+            ]
+
+        workflow.add_conditional_edges(START, fan_out_analysts)
+
+        # Connect each analyst's tool loop and汇聚 to Bull Researcher
         for i, analyst_type in enumerate(selected_analysts):
             current_analyst = f"{analyst_type.capitalize()} Analyst"
             current_clear = f"Msg Clear {analyst_type.capitalize()}"
-
-            # Add conditional edges for current analyst (all analysts now use tool nodes)
             current_tools = f"tools_{analyst_type}"
+
+            # Add conditional edges for current analyst's tool loop
             workflow.add_conditional_edges(
                 current_analyst,
                 getattr(self.conditional_logic, f"should_continue_{analyst_type}"),
@@ -149,12 +157,8 @@ class GraphSetup:
             )
             workflow.add_edge(current_tools, current_analyst)
 
-            # Connect to next analyst or to Bull Researcher if this is the last analyst
-            if i < len(selected_analysts) - 1:
-                next_analyst = f"{selected_analysts[i + 1].capitalize()} Analyst"
-                workflow.add_edge(current_clear, next_analyst)
-            else:
-                workflow.add_edge(current_clear, "Bull Researcher")
+            # After clearing messages, go to Bull Researcher (all analysts汇聚 here)
+            workflow.add_edge(current_clear, "Bull Researcher")
 
         # Add remaining edges
         workflow.add_conditional_edges(
