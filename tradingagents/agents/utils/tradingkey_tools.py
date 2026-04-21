@@ -28,44 +28,43 @@ def get_tradingkey_global_news(
         格式化后的 TradingKey 全球新闻字符串
     """
     try:
-        curr_dt = datetime.strptime(curr_date, "%Y-%m-%d")
-        start_dt = curr_dt - timedelta(days=look_back_days)
-        start_date = start_dt.strftime("%Y-%m-%d")
+        hours = look_back_days * 24
 
         params = {
-            "start_date": start_date,
-            "end_date": curr_date,
+            "hours": hours,
+            "limit": limit,
         }
 
         response = requests.get(
-            "http://172.16.40.22:5000/news", params=params, timeout=30
+            "http://host.docker.internal:5001/api/news", params=params, timeout=30
         )
         response.raise_for_status()
-        data = response.json()
-
-        # API 返回格式: {"count": N, "news": [...], ...}
-        news_items = data.get("news", [])
+        result = response.json()
+        news_items = result.get("data", [])
 
         if not news_items:
-            return f"在 {start_date} 到 {curr_date} 期间未找到 TradingKey 全球新闻"
+            return f"在最近 {look_back_days} 天内未找到 TradingKey 全球新闻"
 
-        result = f"## TradingKey 全球市场新闻，从 {start_date} 到 {curr_date}：\n\n"
-        for item in news_items[:limit]:
+        result = f"## TradingKey 全球市场新闻（最近 {look_back_days} 天）：\n\n"
+        for item in news_items:
             title = item.get("title", "无标题")
             summary = item.get("summary", item.get("content", ""))
             category = item.get("category", "TradingKey")
-            exact_time = item.get("exact_time", "")
+            pub_date = item.get("date", item.get("pub_date", ""))
+            link = item.get("link", item.get("url", ""))
 
             result += f"### {title}（分类：{category}）\n"
-            if exact_time:
-                result += f"**时间：** {exact_time}\n"
+            if pub_date:
+                result += f"**时间：** {pub_date}\n"
             if summary:
                 result += f"{summary}\n"
+            if link:
+                result += f"Link: {link}\n"
             result += "\n"
 
         return result
 
     except requests.exceptions.ConnectionError:
-        return "错误：无法连接到 TradingKey API（http://172.16.40.22:5000/news），请确保服务正在运行。"
+        return "错误：无法连接到 TradingKey API（http://host.docker.internal:5001/api/news），请确保服务正在运行。"
     except Exception as e:
         return f"获取 TradingKey 全球新闻时出错：{str(e)}"

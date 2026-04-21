@@ -66,6 +66,12 @@ VENDOR_LIST = [
 ]
 
 # Mapping of methods to their vendor-specific implementations
+# 方法到供应商特定实现的映射
+# 中文注释：
+#   VENDOR_METHODS是一个字典，用于存储不同方法与其各自供应商实现之间的映射关系。
+#   每个键是一个方法名，值是一个字典，其中包含各个供应商的实现函数。
+#   例如，对于"get_stock_data"方法，有两个供应商实现：
+#   alpha_vantage使用get_alpha_vantage_stock函数，yfinance使用get_YFin_data_online函数
 VENDOR_METHODS = {
     # core_stock_apis
     "get_stock_data": {
@@ -113,7 +119,13 @@ VENDOR_METHODS = {
 
 
 def get_category_for_method(method: str) -> str:
-    """Get the category that contains the specified method."""
+    """Get the category that contains the specified method.
+    
+    中文注释：
+        获取包含指定方法的类别。
+        该函数遍历工具类别字典，查找包含指定方法的类别。
+        如果找到匹配项，则返回该类别名称；否则抛出ValueError异常。
+    """
     for category, info in TOOLS_CATEGORIES.items():
         if method in info["tools"]:
             return category
@@ -123,6 +135,12 @@ def get_category_for_method(method: str) -> str:
 def get_vendor(category: str, method: str = None) -> str:
     """Get the configured vendor for a data category or specific tool method.
     Tool-level configuration takes precedence over category-level.
+    
+    中文注释：
+        获取数据类别或特定工具方法的配置供应商。
+        工具级别的配置优先于类别级别的配置。
+        该函数首先检查是否有针对特定方法的配置，如果有则返回对应的供应商；
+        否则回退到类别级别的配置，如果没有找到则返回默认值。
     """
     config = get_config()
 
@@ -137,7 +155,14 @@ def get_vendor(category: str, method: str = None) -> str:
 
 
 def route_to_vendor(method: str, *args, **kwargs):
-    """Route method calls to appropriate vendor implementation with fallback support."""
+    """Route method calls to appropriate vendor implementation with fallback support.
+    
+    中文注释：
+        将方法调用路由到适当的供应商实现，并支持备用方案。
+        该函数实现了容错机制，当一个供应商不可用时，会自动尝试下一个供应商。
+        首先根据方法获取其所属类别，然后获取配置的供应商列表，
+        构建备选供应商链，按顺序尝试每个供应商直到成功或全部失败。
+    """
     category = get_category_for_method(method)
     vendor_config = get_vendor(category, method)
     primary_vendors = [v.strip() for v in vendor_config.split(",")]

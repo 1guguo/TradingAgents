@@ -12,6 +12,11 @@ def get_news(ticker, start_date, end_date) -> dict[str, str] | str:
 
     Returns:
         Dictionary containing news sentiment data or JSON string.
+        
+    中文注释：
+        此函数用于获取指定股票代码在特定时间范围内的新闻和情绪数据。
+        通过Alpha Vantage API获取来自全球主要新闻来源的实时和历史市场新闻。
+        可以覆盖股票、加密货币、外汇以及财政政策、并购、IPO等主题。
     """
 
     params = {

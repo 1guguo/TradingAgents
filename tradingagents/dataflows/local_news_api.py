@@ -5,6 +5,41 @@ from typing import Annotated
 from datetime import datetime
 
 
+TICKER_TO_CATEGORY = {
+    "CL": "原油",
+    "BZ": "原油",
+    "USO": "原油",
+    "GC": "黄金",
+    "XAU": "黄金",
+    "GLD": "黄金",
+    "SI": "白银",
+    "SLV": "白银",
+    "HG": "铜",
+    "COPPER": "铜",
+    "NG": "天然气",
+    "UNG": "天然气",
+    "ZC": "玉米",
+    "ZS": "大豆",
+    "ZW": "小麦",
+    "ES": "金融",
+    "SPY": "金融",
+    "NQ": "金融",
+    "FX": "外汇",
+    "EUR": "外汇",
+    "GBP": "外汇",
+    "JPY": "外汇",
+    "CNY": "外汇",
+    "QQQ": "科技",
+    "XLK": "科技",
+    "SOXX": "科技",
+    "VIX": "金融",
+}
+
+CHINESE_STOCK_CATEGORY = {
+    "股票": ["600", "000", "002", "300"],
+}
+
+
 def get_news_local_api(
     ticker: Annotated[str, "Ticker symbol"],
     start_date: Annotated[str, "Start date in yyyy-mm-dd format"],
@@ -14,7 +49,7 @@ def get_news_local_api(
     Retrieve news for a specific stock ticker from local API.
 
     Args:
-        ticker: Stock ticker symbol (e.g., "AAPL")
+        ticker: Stock ticker symbol (e.g., "AAPL", "CL", "600519")
         start_date: Start date in yyyy-mm-dd format
         end_date: End date in yyyy-mm-dd format
 
@@ -22,23 +57,39 @@ def get_news_local_api(
         Formatted string containing news articles
     """
     try:
+        from datetime import timedelta
+
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+        hours = int((end_dt - start_dt).total_seconds() / 3600)
+
         params = {
-            "start_date": start_date,
-            "end_date": end_date,
+            "limit": 50,
+            "hours": hours,
         }
 
-        # If ticker looks like a Chinese stock, try category filter
-        if ticker.isdigit() or any("\u4e00" <= c <= "\u9fff" for c in ticker):
-            params["category"] = "股票"
+        category = TICKER_TO_CATEGORY.get(ticker.upper())
+        if category:
+            params["category"] = category
 
-        response = requests.get("http://127.0.0.1:5000/news", params=params, timeout=30)
+        if ticker.isdigit() or any("\u4e00" <= c <= "\u9fff" for c in ticker):
+            if not category:
+                params["category"] = "股票"
+            params["keyword"] = ticker
+
+        if not category and not params.get("keyword"):
+            params["keyword"] = ticker
+
+        response = requests.get(
+            "http://host.docker.internal:5001/api/news", params=params, timeout=30
+        )
         response.raise_for_status()
-        news_items = response.json()
+        result = response.json()
+        news_items = result.get("data", [])
 
         if not news_items:
             return f"No news found for {ticker} between {start_date} and {end_date}"
 
-        # Format as Markdown
         news_str = f"## {ticker} News, from {start_date} to {end_date}:\n\n"
         for item in news_items:
             title = item.get("title", "No title")
@@ -59,7 +110,7 @@ def get_news_local_api(
         return news_str
 
     except requests.exceptions.ConnectionError:
-        return f"Error: Cannot connect to local news API at http://127.0.0.1:5000/news"
+        return f"Error: Cannot connect to local news API at http://host.docker.internal:5001/api/news"
     except Exception as e:
         return f"Error fetching news for {ticker}: {str(e)}"
 
@@ -85,23 +136,26 @@ def get_global_news_local_api(
 
         curr_dt = datetime.strptime(curr_date, "%Y-%m-%d")
         start_dt = curr_dt - timedelta(days=look_back_days)
-        start_date = start_dt.strftime("%Y-%m-%d")
+        hours = look_back_days * 24
 
         params = {
-            "start_date": start_date,
-            "end_date": curr_date,
+            "hours": hours,
+            "limit": limit,
         }
 
-        response = requests.get("http://127.0.0.1:5000/news", params=params, timeout=30)
+        response = requests.get(
+            "http://host.docker.internal:5001/api/news", params=params, timeout=30
+        )
         response.raise_for_status()
-        news_items = response.json()
+        result = response.json()
+        news_items = result.get("data", [])
 
         if not news_items:
-            return f"No global news found between {start_date} and {curr_date}"
+            return f"No global news found in the last {look_back_days} days"
 
-        # Format as Markdown
+        start_date = start_dt.strftime("%Y-%m-%d")
         news_str = f"## Global Market News, from {start_date} to {curr_date}:\n\n"
-        for item in news_items[:limit]:
+        for item in news_items:
             title = item.get("title", "No title")
             summary = item.get("summary", item.get("content", ""))
             source = item.get("source", item.get("category", "Unknown"))
@@ -120,6 +174,6 @@ def get_global_news_local_api(
         return news_str
 
     except requests.exceptions.ConnectionError:
-        return f"Error: Cannot connect to local news API at http://127.0.0.1:5000/news"
+        return f"Error: Cannot connect to local news API at http://host.docker.internal:5001/api/news"
     except Exception as e:
         return f"Error fetching global news: {str(e)}"

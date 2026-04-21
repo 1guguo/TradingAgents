@@ -1,5 +1,12 @@
 """yfinance-based news data fetching functions."""
 
+# 中文注释：
+#   这个模块提供基于Yahoo Finance (yfinance) 的新闻数据获取功能
+#   主要包含三个功能：
+#   1. 提取新闻文章数据 (_extract_article_data)
+#   2. 获取特定股票的新闻 (get_news_yfinance)
+#   3. 获取全球/宏观经济新闻 (get_global_news_yfinance)
+
 import yfinance as yf
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -9,7 +16,10 @@ from .stockstats_utils import yf_retry
 
 def _extract_article_data(article: dict) -> dict:
     """Extract article data from yfinance news format (handles nested 'content' structure)."""
-    # Handle nested content structure
+    # 中文注释：
+    #   从yfinance新闻格式中提取文章数据（处理嵌套的'content'结构）
+    #   这是一个内部辅助函数，用于标准化新闻数据的格式
+    #   处理嵌套内容结构
     if "content" in article:
         content = article["content"]
         title = content.get("title", "No title")
@@ -64,6 +74,14 @@ def get_news_yfinance(
     Returns:
         Formatted string containing news articles
     """
+    # 中文注释：
+    #   使用yfinance获取特定股票代码的新闻
+    #   参数:
+    #       ticker: 股票代码 (例如 "AAPL")
+    #       start_date: 开始日期，格式为yyyy-mm-dd
+    #       end_date: 结束日期，格式为yyyy-mm-dd
+    #   返回值:
+    #       包含新闻文章的格式化字符串
     try:
         stock = yf.Ticker(ticker)
         news = yf_retry(lambda: stock.get_news(count=20))
@@ -131,6 +149,16 @@ def get_global_news_yfinance(
     Returns:
         Formatted string containing global news articles
     """
+    # 中文注释：
+    #   使用yfinance搜索功能获取全球/宏观经济新闻
+    #   通过多个关键词搜索查询宏观和经济相关的新闻
+    #   参数:
+    #       curr_date: 当前日期，格式为yyyy-mm-dd
+    #       look_back_days: 要回溯查询的天数
+    #       limit: 返回文章的最大数量
+    #   返回值:
+    #       包含全球新闻文章的格式化字符串
+    
     # Search queries for macro/global news
     search_queries = [
         "stock market economy",

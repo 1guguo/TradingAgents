@@ -923,9 +923,10 @@ def update_analyst_statuses(message_buffer, chunk):
         agent_name = ANALYST_AGENT_NAMES[analyst_key]
         report_key = ANALYST_REPORT_MAP[analyst_key]
 
-        # Capture new report content from current chunk
-        if chunk.get(report_key):
-            message_buffer.update_report_section(report_key, chunk[report_key])
+        # Capture new report content from current chunk (only if non-empty)
+        content = chunk.get(report_key)
+        if content and content.strip():
+            message_buffer.update_report_section(report_key, content)
 
         # Determine status from accumulated sections, not just current chunk
         has_report = bool(message_buffer.report_sections.get(report_key))
