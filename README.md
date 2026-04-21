@@ -28,6 +28,7 @@
 # TradingAgents: 多智能体LLM金融交易框架
 
 ## 新闻
+- [2026-04] **本项目增强版** 发布，新增阿里云 CodingPlan 国内模型支持、TradingKey 新智能体、多维度数据源接入，以及完整的 API 服务（报告查询 + 模型启动接口）。
 - [2026-03] **TradingAgents v0.2.3** 发布，支持多语言输出、GPT-5.4系列模型、统一模型目录、回测日期准确性和代理支持。
 - [2026-03] **TradingAgents v0.2.2** 发布，支持GPT-5.4/Gemini 3.1/Claude 4.6模型、五级评分标准、OpenAI Responses API、Anthropic effort控制以及跨平台稳定性。
 - [2026-02] **TradingAgents v0.2.0** 发布，支持多提供商LLM（GPT-5.x、Gemini 3.x、Claude 4.x、Grok 4.x）和改进的系统架构。
@@ -53,6 +54,102 @@
 
 </div>
 
+## 🆕 增强特性
+
+本项目在原始 TradingAgents 框架基础上进行了以下增强：
+
+### 🤖 接入阿里云 CodingPlan 国内模型
+
+支持阿里云 DashScope 平台的国内主流大模型，无需翻墙即可使用：
+
+| 模型 | 提供商 | 说明 |
+|------|--------|------|
+| Qwen3.5 Plus | 通义千问 | 快速、高性价比 |
+| Kimi K2.5 | 月之暗面 | 长上下文推理 |
+| GLM-5 | 智谱 AI | 中文理解优化 |
+| MiniMax M2.5 | MiniMax | 高性能通用模型 |
+
+配置方式：
+```bash
+export ALIYUN_API_KEY=your_key_here
+```
+
+系统会自动将 `ALIYUN_API_KEY` 映射到 OpenAI 兼容接口，对接阿里云 DashScope 后端。
+
+### 🔑 新增 TradingKey 智能体
+
+新增 **TradingKey 分析师**，提供基于关键交易指标的深度分析，包括：
+- 核心技术指标综合评估
+- 关键价位识别（支撑/阻力）
+- 交易信号强度评分
+
+在分析师配置中添加 `"tradingkey"` 即可启用。
+
+### 📡 多维度数据源接入
+
+| 数据源 | 说明 |
+|--------|------|
+| yfinance proxy | 通过代理获取 Yahoo Finance 数据，提升国内访问稳定性 |
+| local_news_api | 本地新闻聚合 API，补充 Alpha Vantage 新闻覆盖 |
+| yfinance_news | 基于 Yahoo Finance 的新闻数据源 |
+
+数据供应商配置示例：
+```python
+config["data_vendors"] = {
+    "core_stock_apis": "yfinance",
+    "technical_indicators": "yfinance",
+    "fundamental_data": "yfinance",
+    "news_data": "yfinance",
+}
+```
+
+### 🌐 API 服务
+
+#### 报告查询 API (Report Viewer)
+
+基于 Flask 的报告浏览服务，支持按股票代码和日期浏览、查看、下载报告：
+
+```bash
+python webui/report_viewer.py
+# 访问 http://0.0.0.0:5000
+```
+
+| 端点 | 说明 |
+|------|------|
+| `GET /` | 首页，展示所有股票代码和分析日期 |
+| `GET /<ticker>/<date>/` | 查看指定日期的报告列表 |
+| `GET /<ticker>/<date>/view/<filename>` | 在线查看报告内容 |
+| `GET /<ticker>/<date>/download/<filename>` | 下载报告文件 |
+
+#### 模型启动 API (Analysis API)
+
+基于 FastAPI 的异步分析任务服务，支持提交分析任务并实时查询进度：
+
+```bash
+python webui/api_server.py
+# 访问 http://0.0.0.0:7860
+```
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/analyze` | POST | 提交异步分析任务，返回 `task_id` |
+| `/status/{task_id}` | GET | 查询任务进度和结果 |
+| `/status` | GET | 列出所有任务状态 |
+
+提交分析示例：
+```bash
+curl -X POST http://localhost:7860/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"ticker": "NVDA", "analysts": ["market", "news", "fundamentals", "tradingkey"]}'
+```
+
+查询进度：
+```bash
+curl http://localhost:7860/status/{task_id}
+```
+
+---
+
 ## TradingAgents 框架
 
 TradingAgents 是一个多智能体交易框架，模拟真实交易公司的运作方式。通过部署专业的LLM驱动智能体：从基本面分析师、情绪专家、技术分析师，到交易员、风险管理团队，平台共同评估市场状况并做出交易决策。此外，这些智能体还会进行动态讨论，以确定最佳策略。
@@ -70,6 +167,7 @@ TradingAgents 是一个多智能体交易框架，模拟真实交易公司的运
 - 情绪分析师：使用情绪评分算法分析社交媒体和公众情绪，以判断短期市场情绪。
 - 新闻分析师：监测全球新闻和宏观经济指标，解读事件对市场状况的影响。
 - 技术分析师：利用技术指标（如MACD和RSI）来识别交易模式并预测价格走势。
+- **TradingKey 分析师**：综合关键技术指标，识别关键价位和交易信号强度。
 
 <p align="center">
   <img src="assets/analyst.png" width="100%" style="display: inline-block; margin: 0 2%;">
@@ -141,6 +239,7 @@ export GOOGLE_API_KEY=...          # Google (Gemini)
 export ANTHROPIC_API_KEY=...       # Anthropic (Claude)
 export XAI_API_KEY=...             # xAI (Grok)
 export OPENROUTER_API_KEY=...      # OpenRouter
+export ALIYUN_API_KEY=...          # 阿里云 CodingPlan (国内模型)
 export ALPHA_VANTAGE_API_KEY=...   # Alpha Vantage
 ```
 
@@ -202,7 +301,7 @@ from tradingagents.graph.trading_graph import TradingAgentsGraph
 from tradingagents.default_config import DEFAULT_CONFIG
 
 config = DEFAULT_CONFIG.copy()
-config["llm_provider"] = "openai"        # openai, google, anthropic, xai, openrouter, ollama
+config["llm_provider"] = "openai"        # openai, google, anthropic, xai, openrouter, ollama, aliyun
 config["deep_think_llm"] = "gpt-5.4"     # 用于复杂推理的模型
 config["quick_think_llm"] = "gpt-5.4-mini" # 用于快速任务的模型
 config["max_debate_rounds"] = 2
