@@ -28,7 +28,7 @@
 # TradingAgents: 多智能体LLM金融交易框架
 
 ## 新闻
-- [2026-04] **本项目增强版** 发布，新增阿里云 CodingPlan 国内模型支持、TradingKey 新智能体、多维度数据源接入，以及完整的 API 服务（报告查询 + 模型启动接口）。
+- [2026-04] **本项目增强版** 发布，新增阿里云 CodingPlan 国内模型支持、TradingKey 新智能体、多维度数据源接入，以及完整的 API 服务（报告查询 + 模型启动接口），使用openclaw 驱动进行分析股票。
 - [2026-03] **TradingAgents v0.2.3** 发布，支持多语言输出、GPT-5.4系列模型、统一模型目录、回测日期准确性和代理支持。
 - [2026-03] **TradingAgents v0.2.2** 发布，支持GPT-5.4/Gemini 3.1/Claude 4.6模型、五级评分标准、OpenAI Responses API、Anthropic effort控制以及跨平台稳定性。
 - [2026-02] **TradingAgents v0.2.0** 发布，支持多提供商LLM（GPT-5.x、Gemini 3.x、Claude 4.x、Grok 4.x）和改进的系统架构。
